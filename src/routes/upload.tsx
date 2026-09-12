@@ -171,6 +171,7 @@ function UploadPage() {
   const state = useFinSafe();
   const navigate = useNavigate();
   const mediaInput = useRef<HTMLInputElement>(null);
+  const zipInput = useRef<HTMLInputElement>(null);
 
   async function handleCsv(kind: Kind, file: File) {
     if (!file.name.toLowerCase().endsWith(".csv")) {
@@ -180,19 +181,15 @@ function UploadPage() {
     try {
       const rows = await parseCsv(file);
       const meta: FileMeta = { name: file.name, size: file.size, rows: rows.length };
-      if (kind === "requests") {
-        finsafe.set({
-          requests: toRequests(rows),
-          files: { ...state.files, requests: meta },
-        });
-      } else if (kind === "users") {
-        finsafe.set({ users: toUsers(rows), files: { ...state.files, users: meta } });
-      } else {
-        finsafe.set({
-          transactions: toTransactions(rows),
-          files: { ...state.files, transactions: meta },
-        });
-      }
+      const files = { ...state.files, [kind]: meta };
+      if (kind === "requests") finsafe.set({ requests: toRequests(rows), files });
+      else if (kind === "users") finsafe.set({ users: toUsers(rows), files });
+      else if (kind === "transactions") finsafe.set({ transactions: toTransactions(rows), files });
+      else if (kind === "rates") finsafe.set({ rates: toExchangeRates(rows), files });
+      else if (kind === "paymentOptions")
+        finsafe.set({ paymentOptions: toPaymentOptions(rows), files });
+      else if (kind === "messages") finsafe.set({ messages: toMessages(rows), files });
+      else finsafe.set({ images: toImages(rows), files });
       toast.success(`${file.name} read — ${rows.length.toLocaleString("en-IN")} rows`);
     } catch {
       toast.error("We couldn't read that file — is it a CSV?");
@@ -209,6 +206,45 @@ function UploadPage() {
     }));
     finsafe.set({ media: [...state.media, ...next] });
   }
+
+  async function addZip(file: File | undefined) {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".zip")) {
+      toast.error("That doesn't look like a ZIP folder.");
+      return;
+    }
+    try {
+      const { unzipSync } = await import("fflate");
+      const buffer = new Uint8Array(await file.arrayBuffer());
+      const entries = unzipSync(buffer);
+      const next: MediaFileMeta[] = [];
+      for (const [path, bytes] of Object.entries(entries)) {
+        if (path.endsWith("/") || !bytes.length) continue;
+        const lower = path.toLowerCase();
+        const isImage = /\.(png|jpe?g|webp|gif|bmp)$/.test(lower);
+        if (!isImage && !lower.endsWith(".pdf")) continue;
+        const copy = new Uint8Array(bytes);
+        const blob = new Blob([copy.buffer as ArrayBuffer], {
+          type: isImage ? "image/*" : "application/pdf",
+        });
+        next.push({
+          filename: path.split("/").pop() || path,
+          size: bytes.length,
+          type: isImage ? "image" : "pdf",
+          ...(isImage ? { preview: URL.createObjectURL(blob) } : {}),
+        });
+      }
+      if (!next.length) {
+        toast.error("No images or PDFs were found inside that folder.");
+        return;
+      }
+      finsafe.set({ media: [...state.media, ...next] });
+      toast.success(`${next.length} files read from ${file.name}`);
+    } catch {
+      toast.error("We couldn't open that ZIP folder.");
+    }
+  }
+
 
   function start() {
     if (!state.requests.length) {
