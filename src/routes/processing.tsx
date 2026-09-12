@@ -32,7 +32,6 @@ function ProcessingPage() {
   const { user } = useAuth();
   const userRef = useRef(user);
   userRef.current = user;
-  const started = useRef(false);
   const cancelled = useRef(false);
   const logEnd = useRef<HTMLDivElement>(null);
 
@@ -41,14 +40,13 @@ function ProcessingPage() {
   }, [state.logs.length]);
 
   useEffect(() => {
-    if (started.current) return;
     const snapshot = finsafe.get();
     if (!snapshot.requests.length) {
       navigate({ to: "/upload", replace: true });
       return;
     }
-    started.current = true;
     cancelled.current = false;
+    let stopped = false;
 
     const requests = snapshot.requests;
     const usersMap = new Map(snapshot.users.map((u) => [u.user_id, u]));
@@ -69,7 +67,7 @@ function ProcessingPage() {
     let vlmCalls = 0;
 
     function step() {
-      if (cancelled.current) return;
+      if (stopped || cancelled.current) return;
       const batch = Math.max(1, Math.ceil(requests.length / 60));
       for (let n = 0; n < batch && index < requests.length; n++, index++) {
         const request = requests[index]!;
@@ -131,13 +129,13 @@ function ProcessingPage() {
           finsafe.log("⚠️ Results kept in this session only — saving to your account failed");
         }
       }
-      if (!cancelled.current) navigate({ to: "/results" });
+      if (!stopped && !cancelled.current) navigate({ to: "/results" });
     }
 
     window.setTimeout(step, 200);
 
     return () => {
-      cancelled.current = true;
+      stopped = true;
     };
   }, [navigate]);
 
