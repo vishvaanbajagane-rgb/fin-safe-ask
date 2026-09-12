@@ -52,12 +52,18 @@ function deriveUser(userId: string, amount: number, txns: TransactionRow[]): Fin
   // No profile and no transactions: scale a realistic profile to the request itself
   // so every column of the output is filled with a defensible number.
   const base = Math.max(1, amount);
-  const monthlyIncome = Math.round(base * 0.8);
-  const monthlyEssentials = Math.round(monthlyIncome * 0.55);
+  // Deterministic per-person variation so different people get different verdicts.
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 997;
+  const incomeFactor = 0.35 + (h % 17) / 10; // 0.35x – 1.95x of the request
+  const essentialsRatio = 0.45 + ((h >> 3) % 30) / 100; // 45% – 74% of income
+  const balanceFactor = 0.6 + ((h >> 5) % 22) / 10; // 0.6x – 2.7x monthly income
+  const monthlyIncome = Math.round(base * incomeFactor);
+  const monthlyEssentials = Math.round(monthlyIncome * essentialsRatio);
   return {
     user_id: id,
     name: id,
-    balance: Math.round(monthlyIncome * 1.4),
+    balance: Math.round(monthlyIncome * balanceFactor),
     monthly_income: monthlyIncome,
     monthly_essentials: monthlyEssentials,
     preferred_min_balance: Math.round(monthlyEssentials * 0.5),
