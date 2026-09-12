@@ -43,6 +43,9 @@ export function toRequests(rows: Raw[]): RequestRow[] {
       pick(row, ["item_description", "item", "description", "product"]) ||
       (type ? type.replace(/_/g, " ") : "") ||
       "this purchase";
+    const allowsPartial = parseBoolean(
+      pick(row, ["allows_partial_payment", "partial_payment_allowed", "partial_allowed", "allow_partial"], ""),
+    );
     return {
       request_id: pick(row, ["request_id", "id", "requestid"], `request_${index + 1}`),
       user_id: pick(row, ["user_id", "userid", "user"], `user_${index + 1}`),
@@ -55,7 +58,7 @@ export function toRequests(rows: Raw[]): RequestRow[] {
       ),
       item_description: item,
       context: text,
-      allows_partial_payment: parseBoolean(pick(row, ["allows_partial_payment", "partial_payment_allowed", "partial_allowed", "allow_partial"], "")),
+      ...(allowsPartial !== undefined ? { allows_partial_payment: allowsPartial } : {}),
     };
   });
 }
