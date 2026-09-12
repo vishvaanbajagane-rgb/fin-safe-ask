@@ -7,6 +7,8 @@ export type AffordabilityStatus =
 export interface FinUser {
   user_id: string;
   name: string;
+  /** Currency the raw figures below are expressed in (e.g. INR, EUR, IDR, ZAR). */
+  currency: string;
   balance: number;
   monthly_income: number;
   monthly_essentials: number;
@@ -18,6 +20,7 @@ export interface RequestRow {
   request_id: string;
   user_id: string;
   amount: number;
+  currency: string;
   item_description: string;
   context: string;
   allows_partial_payment?: boolean;
@@ -26,10 +29,41 @@ export interface RequestRow {
 export interface TransactionRow {
   user_id: string;
   amount: number;
+  currency: string;
   type: string;
   status: string;
   category: string;
   date: string;
+  description?: string;
+}
+
+export interface ExchangeRateRow {
+  currency: string;
+  /** How many INR one unit of `currency` is worth. */
+  rate_to_inr: number;
+}
+
+export interface PaymentOptionRow {
+  request_id: string;
+  allows_partial_payment: boolean;
+  allows_installments: boolean;
+  max_installments: number;
+}
+
+export interface MessageRow {
+  user_id: string;
+  request_id: string;
+  text: string;
+  currency: string;
+  date: string;
+}
+
+export interface ImageRow {
+  request_id: string;
+  user_id: string;
+  filename: string;
+  extracted_text: string;
+  currency: string;
 }
 
 export interface MediaFileMeta {
