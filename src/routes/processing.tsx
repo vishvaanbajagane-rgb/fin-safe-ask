@@ -73,16 +73,16 @@ function ProcessingPage() {
         const request = requests[index]!;
         finsafe.log(`🔍 Analyzing ${request.request_id}...`);
 
-        let boost = 0;
+        // Attachments are recorded and marked as pending extraction. They never
+        // alter the balance, so no synthetic boost is applied to the analysis.
         if (config.useVlm && media.length && index < media.length) {
           const rows = analyzeMedia([media[index]!], request.request_id);
           mediaRows.push(...rows);
           vlmCalls += rows.length;
-          boost = 0;
-          finsafe.log(`📸 Extracting text from ${media[index]!.filename}...`);
+          finsafe.log(`📸 Recording attachment ${media[index]!.filename} (extraction pending)...`);
         }
 
-        const result = analyzeRequest(request, usersMap, transactions, config, boost);
+        const result = analyzeRequest(request, usersMap, transactions, config);
         if (config.useLlm) llmCalls++;
         results.push(result);
         finsafe.log(
