@@ -136,7 +136,7 @@ export function analyzeRequest(
     user_id: user.user_id,
     amount_requested: amount,
     item_description: request.item_description,
-    amount_safe_to_pay: String(safeToPay),
+    amount_safe_to_pay: String(Math.min(safeToPay, amount)),
     affordability_status: status,
     recommended_payment_method: method,
     payment_plan: installments.map((i) => `${i.date}:${i.amount}`).join("; "),

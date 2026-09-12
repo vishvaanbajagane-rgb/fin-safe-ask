@@ -10,13 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ProcessingRouteImport } from './routes/processing'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as ResultsIndexRouteImport } from './routes/results.index'
+import { Route as ResultsRequestIdRouteImport } from './routes/results.$requestId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -34,39 +42,83 @@ const UploadRoute = UploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResultsIndexRoute = ResultsIndexRouteImport.update({
+  id: '/results/',
+  path: '/results/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResultsRequestIdRoute = ResultsRequestIdRouteImport.update({
+  id: '/results/$requestId',
+  path: '/results/$requestId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/processing': typeof ProcessingRoute
   '/upload': typeof UploadRoute
+  '/results/$requestId': typeof ResultsRequestIdRoute
+  '/results/': typeof ResultsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/processing': typeof ProcessingRoute
   '/upload': typeof UploadRoute
+  '/results/$requestId': typeof ResultsRequestIdRoute
+  '/results': typeof ResultsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/processing': typeof ProcessingRoute
   '/upload': typeof UploadRoute
+  '/results/$requestId': typeof ResultsRequestIdRoute
+  '/results/': typeof ResultsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/processing' | '/upload'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/processing'
+    | '/upload'
+    | '/results/$requestId'
+    | '/results/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/processing' | '/upload'
-  id: '__root__' | '/' | '/auth' | '/processing' | '/upload'
+  to:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/processing'
+    | '/upload'
+    | '/results/$requestId'
+    | '/results'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/processing'
+    | '/upload'
+    | '/results/$requestId'
+    | '/results/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   ProcessingRoute: typeof ProcessingRoute
   UploadRoute: typeof UploadRoute
+  ResultsRequestIdRoute: typeof ResultsRequestIdRoute
+  ResultsIndexRoute: typeof ResultsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -99,14 +158,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/results/': {
+      id: '/results/'
+      path: '/results'
+      fullPath: '/results/'
+      preLoaderRoute: typeof ResultsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/results/$requestId': {
+      id: '/results/$requestId'
+      path: '/results/$requestId'
+      fullPath: '/results/$requestId'
+      preLoaderRoute: typeof ResultsRequestIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   ProcessingRoute: ProcessingRoute,
   UploadRoute: UploadRoute,
+  ResultsRequestIdRoute: ResultsRequestIdRoute,
+  ResultsIndexRoute: ResultsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

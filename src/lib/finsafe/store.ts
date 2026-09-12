@@ -54,12 +54,38 @@ const initial: FinSafeState = {
   stats: { llmCalls: 0, vlmCalls: 0, avgMs: 0, errors: 0 },
 };
 
-let state: FinSafeState = initial;
+const CACHE_KEY = "finsafe:results";
+
+function readCache(): Partial<FinSafeState> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.sessionStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as Partial<FinSafeState>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeCache() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ results: state.results, requests: state.requests }),
+    );
+  } catch {
+    /* storage full or unavailable — in-memory results still work */
+  }
+}
+
+let state: FinSafeState = { ...initial, ...readCache() };
 const listeners = new Set<() => void>();
 
 function emit() {
+  writeCache();
   listeners.forEach((l) => l());
 }
+
 
 export const finsafe = {
   get(): FinSafeState {
