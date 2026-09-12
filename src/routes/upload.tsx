@@ -1,10 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, FileText, ImageIcon, X } from "lucide-react";
+import { Archive, CheckCircle2, FileText, ImageIcon, X } from "lucide-react";
 import { SiteHeader } from "@/components/finsafe/SiteHeader";
-import { parseCsv, toRequests, toTransactions, toUsers } from "@/lib/finsafe/csv";
-import { finsafe, useFinSafe, type FileMeta } from "@/lib/finsafe/store";
+import {
+  parseCsv,
+  toExchangeRates,
+  toImages,
+  toMessages,
+  toPaymentOptions,
+  toRequests,
+  toTransactions,
+  toUsers,
+} from "@/lib/finsafe/csv";
+import { finsafe, useFinSafe, type FileKind, type FileMeta } from "@/lib/finsafe/store";
 import type { MediaFileMeta } from "@/lib/finsafe/types";
 
 export const Route = createFileRoute("/upload")({
@@ -14,7 +23,7 @@ export const Route = createFileRoute("/upload")({
       {
         name: "description",
         content:
-          "Upload requests, people and transaction files plus receipts, then configure how FinSafe AI should analyse them.",
+          "Upload requests, financial profiles, events, exchange rates, payment options, messages and receipts, then configure how FinSafe AI should analyse them.",
       },
       { property: "og:title", content: "Upload your financial data — FinSafe AI" },
       {
@@ -28,17 +37,36 @@ export const Route = createFileRoute("/upload")({
   component: UploadPage,
 });
 
-type Kind = "requests" | "users" | "transactions";
+type Kind = FileKind;
 
 const zones: { kind: Kind; label: string; required: boolean; hint: string }[] = [
   { kind: "requests", label: "requests.csv", required: true, hint: "What people want to buy" },
-  { kind: "users", label: "users.csv", required: false, hint: "Balances, income, essentials" },
+  {
+    kind: "users",
+    label: "financial_profiles.csv",
+    required: true,
+    hint: "Balance, income, essentials, currency",
+  },
   {
     kind: "transactions",
-    label: "transactions.csv",
-    required: false,
-    hint: "Recent and pending spending",
+    label: "financial_events.csv",
+    required: true,
+    hint: "Completed and pending money movements",
   },
+  {
+    kind: "rates",
+    label: "exchange_rates.csv",
+    required: true,
+    hint: "Converts every amount to INR",
+  },
+  {
+    kind: "paymentOptions",
+    label: "request_payment_options.csv",
+    required: true,
+    hint: "Whether part payment is allowed",
+  },
+  { kind: "messages", label: "messages.csv", required: false, hint: "Text to read for commitments" },
+  { kind: "images", label: "images.csv", required: false, hint: "Receipt text to read" },
 ];
 
 function kb(bytes: number) {
@@ -46,6 +74,7 @@ function kb(bytes: number) {
     ? `${Math.max(1, Math.round(bytes / 1024))} KB`
     : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
+
 
 function Steps({ active }: { active: number }) {
   const steps = ["Upload", "Process", "Results"];
