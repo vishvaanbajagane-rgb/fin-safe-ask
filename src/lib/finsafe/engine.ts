@@ -152,6 +152,9 @@ export function analyzeRequest(
     changes.push(`Build a monthly surplus of at least ₹${Math.round(Math.max(1000, gap / 12)).toLocaleString("en-IN")}`);
     changes.push("Clear pending payments before taking on this purchase");
   }
+  if (status === "affordable_now") {
+    changes.push("No spending changes needed for this purchase");
+  }
 
   const explanation = buildExplanation({
     request,
