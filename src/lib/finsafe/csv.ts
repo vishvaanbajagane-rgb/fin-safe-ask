@@ -29,13 +29,27 @@ export function parseCsv(file: File): Promise<Raw[]> {
 }
 
 export function toRequests(rows: Raw[]): RequestRow[] {
-  return rows.map((row, index) => ({
-    request_id: pick(row, ["request_id", "id", "requestid"], `request_${index + 1}`),
-    user_id: pick(row, ["user_id", "userid", "user"]),
-    amount: num(pick(row, ["amount", "amount_requested", "requested_amount", "price"], "0")),
-    item_description: pick(row, ["item_description", "item", "description", "product"]),
-    context: pick(row, ["context", "notes", "note", "reason"]),
-  }));
+  return rows.map((row, index) => {
+    const type = pick(row, ["request_type", "type", "category"]);
+    const text = pick(row, ["request_text", "text", "message", "context", "notes", "note", "reason"]);
+    const item =
+      pick(row, ["item_description", "item", "description", "product"]) ||
+      (type ? type.replace(/_/g, " ") : "") ||
+      "this purchase";
+    return {
+      request_id: pick(row, ["request_id", "id", "requestid"], `request_${index + 1}`),
+      user_id: pick(row, ["user_id", "userid", "user"], `user_${index + 1}`),
+      amount: num(
+        pick(
+          row,
+          ["requested_amount", "amount_requested", "amount", "price", "value", "cost"],
+          "0",
+        ),
+      ),
+      item_description: item,
+      context: text,
+    };
+  });
 }
 
 export function toUsers(rows: Raw[]): FinUser[] {
