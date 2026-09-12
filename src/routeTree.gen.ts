@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ProcessingRouteImport } from './routes/processing'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as ResultsIndexRouteImport } from './routes/results.index'
+import { Route as ResultsRequestIdRouteImport } from './routes/results.$requestId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,12 +41,18 @@ const ResultsIndexRoute = ResultsIndexRouteImport.update({
   path: '/results/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResultsRequestIdRoute = ResultsRequestIdRouteImport.update({
+  id: '/results/$requestId',
+  path: '/results/$requestId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/processing': typeof ProcessingRoute
   '/upload': typeof UploadRoute
+  '/results/$requestId': typeof ResultsRequestIdRoute
   '/results/': typeof ResultsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/processing': typeof ProcessingRoute
   '/upload': typeof UploadRoute
+  '/results/$requestId': typeof ResultsRequestIdRoute
   '/results': typeof ResultsIndexRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,34 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/processing': typeof ProcessingRoute
   '/upload': typeof UploadRoute
+  '/results/$requestId': typeof ResultsRequestIdRoute
   '/results/': typeof ResultsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/processing' | '/upload' | '/results/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/processing'
+    | '/upload'
+    | '/results/$requestId'
+    | '/results/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/processing' | '/upload' | '/results'
-  id: '__root__' | '/' | '/auth' | '/processing' | '/upload' | '/results/'
+  to:
+    | '/'
+    | '/auth'
+    | '/processing'
+    | '/upload'
+    | '/results/$requestId'
+    | '/results'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/processing'
+    | '/upload'
+    | '/results/$requestId'
+    | '/results/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +104,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ProcessingRoute: typeof ProcessingRoute
   UploadRoute: typeof UploadRoute
+  ResultsRequestIdRoute: typeof ResultsRequestIdRoute
   ResultsIndexRoute: typeof ResultsIndexRoute
 }
 
@@ -116,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResultsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/results/$requestId': {
+      id: '/results/$requestId'
+      path: '/results/$requestId'
+      fullPath: '/results/$requestId'
+      preLoaderRoute: typeof ResultsRequestIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -124,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ProcessingRoute: ProcessingRoute,
   UploadRoute: UploadRoute,
+  ResultsRequestIdRoute: ResultsRequestIdRoute,
   ResultsIndexRoute: ResultsIndexRoute,
 }
 export const routeTree = rootRouteImport
