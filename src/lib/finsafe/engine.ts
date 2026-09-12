@@ -72,7 +72,8 @@ export function analyzeRequest(
   config: AnalysisConfig,
   mediaBoost = 0,
 ): EnrichedResult {
-  const user = users.get(request.user_id) ?? fallbackUser(request.user_id);
+  const user =
+    users.get(request.user_id) ?? deriveUser(request.user_id, request.amount, transactions);
   const userTxns = transactions.filter((t) => !t.user_id || t.user_id === user.user_id);
 
   const pending = userTxns
