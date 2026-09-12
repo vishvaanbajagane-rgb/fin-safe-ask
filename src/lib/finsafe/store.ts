@@ -2,10 +2,14 @@ import { useSyncExternalStore } from "react";
 import type {
   AnalysisConfig,
   EnrichedResult,
+  ExchangeRateRow,
   FinUser,
+  ImageRow,
   LogLine,
   MediaAnalysisRow,
   MediaFileMeta,
+  MessageRow,
+  PaymentOptionRow,
   RequestRow,
   TransactionRow,
 } from "./types";
@@ -16,13 +20,26 @@ export interface FileMeta {
   rows: number;
 }
 
+export type FileKind =
+  | "requests"
+  | "users"
+  | "transactions"
+  | "rates"
+  | "paymentOptions"
+  | "messages"
+  | "images";
+
 export interface FinSafeState {
   requests: RequestRow[];
   users: FinUser[];
   transactions: TransactionRow[];
+  rates: ExchangeRateRow[];
+  paymentOptions: PaymentOptionRow[];
+  messages: MessageRow[];
+  images: ImageRow[];
   media: MediaFileMeta[];
   mediaAnalysis: MediaAnalysisRow[];
-  files: { requests?: FileMeta; users?: FileMeta; transactions?: FileMeta };
+  files: Partial<Record<FileKind, FileMeta>>;
   config: AnalysisConfig;
   results: EnrichedResult[];
   logs: LogLine[];
@@ -36,6 +53,10 @@ const initial: FinSafeState = {
   requests: [],
   users: [],
   transactions: [],
+  rates: [],
+  paymentOptions: [],
+  messages: [],
+  images: [],
   media: [],
   mediaAnalysis: [],
   files: {},
@@ -85,7 +106,6 @@ function emit() {
   writeCache();
   listeners.forEach((l) => l());
 }
-
 
 export const finsafe = {
   get(): FinSafeState {

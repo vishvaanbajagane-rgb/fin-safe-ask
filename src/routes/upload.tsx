@@ -1,10 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, FileText, ImageIcon, X } from "lucide-react";
+import { Archive, CheckCircle2, FileText, ImageIcon, X } from "lucide-react";
 import { SiteHeader } from "@/components/finsafe/SiteHeader";
-import { parseCsv, toRequests, toTransactions, toUsers } from "@/lib/finsafe/csv";
-import { finsafe, useFinSafe, type FileMeta } from "@/lib/finsafe/store";
+import {
+  parseCsv,
+  toExchangeRates,
+  toImages,
+  toMessages,
+  toPaymentOptions,
+  toRequests,
+  toTransactions,
+  toUsers,
+} from "@/lib/finsafe/csv";
+import { finsafe, useFinSafe, type FileKind, type FileMeta } from "@/lib/finsafe/store";
 import type { MediaFileMeta } from "@/lib/finsafe/types";
 
 export const Route = createFileRoute("/upload")({
@@ -14,7 +23,7 @@ export const Route = createFileRoute("/upload")({
       {
         name: "description",
         content:
-          "Upload requests, people and transaction files plus receipts, then configure how FinSafe AI should analyse them.",
+          "Upload requests, financial profiles, events, exchange rates, payment options, messages and receipts, then configure how FinSafe AI should analyse them.",
       },
       { property: "og:title", content: "Upload your financial data — FinSafe AI" },
       {
@@ -28,17 +37,36 @@ export const Route = createFileRoute("/upload")({
   component: UploadPage,
 });
 
-type Kind = "requests" | "users" | "transactions";
+type Kind = FileKind;
 
 const zones: { kind: Kind; label: string; required: boolean; hint: string }[] = [
   { kind: "requests", label: "requests.csv", required: true, hint: "What people want to buy" },
-  { kind: "users", label: "users.csv", required: false, hint: "Balances, income, essentials" },
+  {
+    kind: "users",
+    label: "financial_profiles.csv",
+    required: true,
+    hint: "Balance, income, essentials, currency",
+  },
   {
     kind: "transactions",
-    label: "transactions.csv",
-    required: false,
-    hint: "Recent and pending spending",
+    label: "financial_events.csv",
+    required: true,
+    hint: "Completed and pending money movements",
   },
+  {
+    kind: "rates",
+    label: "exchange_rates.csv",
+    required: true,
+    hint: "Converts every amount to INR",
+  },
+  {
+    kind: "paymentOptions",
+    label: "request_payment_options.csv",
+    required: true,
+    hint: "Whether part payment is allowed",
+  },
+  { kind: "messages", label: "messages.csv", required: false, hint: "Text to read for commitments" },
+  { kind: "images", label: "images.csv", required: false, hint: "Receipt text to read" },
 ];
 
 function kb(bytes: number) {
@@ -46,6 +74,7 @@ function kb(bytes: number) {
     ? `${Math.max(1, Math.round(bytes / 1024))} KB`
     : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
+
 
 function Steps({ active }: { active: number }) {
   const steps = ["Upload", "Process", "Results"];
@@ -142,6 +171,7 @@ function UploadPage() {
   const state = useFinSafe();
   const navigate = useNavigate();
   const mediaInput = useRef<HTMLInputElement>(null);
+  const zipInput = useRef<HTMLInputElement>(null);
 
   async function handleCsv(kind: Kind, file: File) {
     if (!file.name.toLowerCase().endsWith(".csv")) {
@@ -151,19 +181,15 @@ function UploadPage() {
     try {
       const rows = await parseCsv(file);
       const meta: FileMeta = { name: file.name, size: file.size, rows: rows.length };
-      if (kind === "requests") {
-        finsafe.set({
-          requests: toRequests(rows),
-          files: { ...state.files, requests: meta },
-        });
-      } else if (kind === "users") {
-        finsafe.set({ users: toUsers(rows), files: { ...state.files, users: meta } });
-      } else {
-        finsafe.set({
-          transactions: toTransactions(rows),
-          files: { ...state.files, transactions: meta },
-        });
-      }
+      const files = { ...state.files, [kind]: meta };
+      if (kind === "requests") finsafe.set({ requests: toRequests(rows), files });
+      else if (kind === "users") finsafe.set({ users: toUsers(rows), files });
+      else if (kind === "transactions") finsafe.set({ transactions: toTransactions(rows), files });
+      else if (kind === "rates") finsafe.set({ rates: toExchangeRates(rows), files });
+      else if (kind === "paymentOptions")
+        finsafe.set({ paymentOptions: toPaymentOptions(rows), files });
+      else if (kind === "messages") finsafe.set({ messages: toMessages(rows), files });
+      else finsafe.set({ images: toImages(rows), files });
       toast.success(`${file.name} read — ${rows.length.toLocaleString("en-IN")} rows`);
     } catch {
       toast.error("We couldn't read that file — is it a CSV?");
@@ -180,6 +206,45 @@ function UploadPage() {
     }));
     finsafe.set({ media: [...state.media, ...next] });
   }
+
+  async function addZip(file: File | undefined) {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".zip")) {
+      toast.error("That doesn't look like a ZIP folder.");
+      return;
+    }
+    try {
+      const { unzipSync } = await import("fflate");
+      const buffer = new Uint8Array(await file.arrayBuffer());
+      const entries = unzipSync(buffer);
+      const next: MediaFileMeta[] = [];
+      for (const [path, bytes] of Object.entries(entries)) {
+        if (path.endsWith("/") || !bytes.length) continue;
+        const lower = path.toLowerCase();
+        const isImage = /\.(png|jpe?g|webp|gif|bmp)$/.test(lower);
+        if (!isImage && !lower.endsWith(".pdf")) continue;
+        const copy = new Uint8Array(bytes);
+        const blob = new Blob([copy.buffer as ArrayBuffer], {
+          type: isImage ? "image/*" : "application/pdf",
+        });
+        next.push({
+          filename: path.split("/").pop() || path,
+          size: bytes.length,
+          type: isImage ? "image" : "pdf",
+          ...(isImage ? { preview: URL.createObjectURL(blob) } : {}),
+        });
+      }
+      if (!next.length) {
+        toast.error("No images or PDFs were found inside that folder.");
+        return;
+      }
+      finsafe.set({ media: [...state.media, ...next] });
+      toast.success(`${next.length} files read from ${file.name}`);
+    } catch {
+      toast.error("We couldn't open that ZIP folder.");
+    }
+  }
+
 
   function start() {
     if (!state.requests.length) {
