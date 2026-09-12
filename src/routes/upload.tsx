@@ -77,7 +77,7 @@ function CsvZone({
   label: string;
   required: boolean;
   hint: string;
-  meta?: FileMeta;
+  meta?: FileMeta | undefined;
   onFile: (kind: Kind, file: File) => void;
 }) {
   const [over, setOver] = useState(false);
@@ -176,7 +176,7 @@ function UploadPage() {
       filename: f.name,
       size: f.size,
       type: f.type || "file",
-      preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined,
+      ...(f.type.startsWith("image/") ? { preview: URL.createObjectURL(f) } : {}),
     }));
     finsafe.set({ media: [...state.media, ...next] });
   }
