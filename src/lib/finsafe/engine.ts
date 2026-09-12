@@ -176,8 +176,14 @@ export function analyzeRequest(
     amount_safe_to_pay: String(Math.min(safeToPay, amount)),
     affordability_status: status,
     recommended_payment_method: method,
-    payment_plan: installments.map((i) => `${i.date}:${i.amount}`).join("; "),
-    earliest_date_for_full_payment: earliest,
+    payment_plan: installments.length
+      ? installments.map((i) => `${i.date}:${i.amount}`).join("; ")
+      : status === "affordable_now"
+        ? `Single payment of ${Math.round(Math.min(safeToPay, amount))} on ${iso(today)}`
+        : status === "affordable_later"
+          ? `Save until ${earliest}, then one full payment of ${Math.round(amount)}`
+          : "No viable payment plan within the forecast window",
+    earliest_date_for_full_payment: earliest || "beyond_forecast_window",
     spending_changes_needed: changes.join("; "),
     decision_explanation: explanation,
     installments,
