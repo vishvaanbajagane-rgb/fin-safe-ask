@@ -30,6 +30,8 @@ function ProcessingPage() {
   const state = useFinSafe();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const userRef = useRef(user);
+  userRef.current = user;
   const started = useRef(false);
   const cancelled = useRef(false);
   const logEnd = useRef<HTMLDivElement>(null);
@@ -113,10 +115,11 @@ function ProcessingPage() {
     }
 
     async function finish() {
-      if (user) {
+      const owner = userRef.current;
+      if (owner) {
         try {
           await persistAnalysis({
-            ownerId: user.id,
+            ownerId: owner.id,
             requests,
             users: snapshot.users,
             transactions,
@@ -136,7 +139,7 @@ function ProcessingPage() {
     return () => {
       cancelled.current = true;
     };
-  }, [navigate, user]);
+  }, [navigate]);
 
   const total = state.requests.length;
   const done = state.results.length;
