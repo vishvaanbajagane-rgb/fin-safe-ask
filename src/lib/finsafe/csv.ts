@@ -28,6 +28,13 @@ export function parseCsv(file: File): Promise<Raw[]> {
   });
 }
 
+function parseBoolean(value: string): boolean | undefined {
+  const v = value.trim().toLowerCase();
+  if (v === "true" || v === "1" || v === "yes" || v === "y") return true;
+  if (v === "false" || v === "0" || v === "no" || v === "n") return false;
+  return undefined;
+}
+
 export function toRequests(rows: Raw[]): RequestRow[] {
   return rows.map((row, index) => {
     const type = pick(row, ["request_type", "type", "category"]);
@@ -48,6 +55,7 @@ export function toRequests(rows: Raw[]): RequestRow[] {
       ),
       item_description: item,
       context: text,
+      allows_partial_payment: parseBoolean(pick(row, ["allows_partial_payment", "partial_payment_allowed", "partial_allowed", "allow_partial"], "")),
     };
   });
 }

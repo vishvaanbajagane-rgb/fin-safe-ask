@@ -20,6 +20,7 @@ export interface RequestRow {
   amount: number;
   item_description: string;
   context: string;
+  allows_partial_payment?: boolean;
 }
 
 export interface TransactionRow {
